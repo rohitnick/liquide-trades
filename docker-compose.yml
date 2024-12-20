@@ -1,0 +1,22 @@
+services:
+  app:
+    build: ./
+    container_name: liquide-trades
+    ports:
+      - "3000:3000"
+    env_file: .env.local # Load environment variables
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    container_name: liquide-trades-postgres
+    restart: always
+    env_file: .env.local # Load environment variables
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

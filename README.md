@@ -1,3 +1,5 @@
 # liquide-trades
 
-Run `npm run dev` to start server in development mode
+To run this project using Docker:
+
+Run `docker-compose up` command
