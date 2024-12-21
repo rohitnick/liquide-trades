@@ -1,0 +1,1 @@
+export const BASE_URL = `${process.env.APP_PROTOCOL}://${process.env.APP_DOMAIN}:${process.env.APP_PORT}`

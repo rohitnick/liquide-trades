@@ -4,7 +4,7 @@ import { AppDataSource } from "./data-source";
 import express from "express";
 import routes from "./routes";
 
-// set default port to 3000
+// set default port
 const PORT = process.env.APP_PORT || 3000
 const app = express();
 
