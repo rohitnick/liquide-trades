@@ -2,6 +2,7 @@ import "reflect-metadata"
 
 import { AppDataSource } from "./data-source";
 import express from "express";
+import redis from "./redis";
 import routes from "./routes";
 
 // set default port
@@ -14,6 +15,8 @@ app.use(express.json());
 
 AppDataSource.initialize()
     .then(() => {
+        redis.on('connect', () => console.log('Redis connected'));
+        redis.on('error', (err) => console.error('Redis error:', err));
         // set routes to routes folder
         app.use("/", routes);
 

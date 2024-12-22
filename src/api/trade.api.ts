@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 
 import { AppDataSource } from '../data-source';
 import { Trade } from '../entities/Trade';
+import { fetchTradesFromRedis } from "../services/query.service";
+import redis from "../redis";
 
 const tradeRepository = AppDataSource.getRepository(Trade);
 
@@ -9,11 +11,9 @@ const tradeRepository = AppDataSource.getRepository(Trade);
 export const getTrades = async (req: Request, res: Response): Promise<any> => {
     try {
         const { type, user_id } = req.query;
-        const where: any = {};
-        if (type) where.type = type;
-        if (user_id) where.user_id = Number(user_id);
+
+        const trades = await fetchTradesFromRedis(type as string, Number(user_id));
         
-        const trades = await tradeRepository.find({ where });
         res.status(200).json(trades);
     } catch (error: any) {
         res.status(500).json({ message: error.message });
@@ -25,11 +25,12 @@ export const getTradeById = async (req: Request, res: Response): Promise<any> =>
     try {
         const id = Number(req.params.id);
         
-        const trade = await tradeRepository.findOneBy({ id });
+        const trade = await redis.get(`trade:${id}`);
         if (!trade) {
-            return res.status(404).json({ message: 'Trade not found' });
+          return res.status(404).json({ message: 'Trade not found' });
         }
-        res.status(200).json(trade);
+        
+        res.status(200).json(JSON.parse(trade));
     } catch (error: any) {
         res.status(500).json({ message: error.message });
     }

@@ -1,7 +1,8 @@
-import { BeforeInsert, Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { AfterInsert, BeforeInsert, Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { IsEnum, IsInt, IsNotEmpty, Max, Min, validate } from 'class-validator';
 
 import { User } from './User';
+import redis from '../redis';
 import { throwValidatorError } from '../utils/error';
 
 export enum TradeType { 'buy', 'sell' }
@@ -45,7 +46,6 @@ export class Trade {
     @BeforeInsert()
     _performValidation = async () => {
         const errors = await validate(this);
-        console.log(errors)
         if (errors.length > 0) {
             throwValidatorError(this, errors);
         }
@@ -54,5 +54,24 @@ export class Trade {
     @BeforeInsert()
     formatTimestamp() {
         if (this.timestamp) this.timestamp = new Date(this.timestamp)
+    }
+
+    @AfterInsert()
+    async syncToRedis() {
+        try {
+            // Store full trade data under trade:<trade_id>
+            const tradeKey = `trade:${this.id}`;
+            await redis.set(tradeKey, JSON.stringify(this));
+
+            const score = this.id
+
+            // Add trade ID to sorted sets with the score
+            await redis.zadd('trades:all', score, this.id.toString());
+            await redis.zadd(`trades:user:${this.user_id}`, score, this.id.toString());
+            await redis.zadd(`trades:type:${this.type}`, score, this.id.toString());
+            await redis.zadd(`trades:user:${this.user_id}:type:${this.type}`, score, this.id.toString());
+        } catch (error) {
+            console.error(`Failed to sync trade ${this.id} to Redis:`, error);
+        }
     }
 }
